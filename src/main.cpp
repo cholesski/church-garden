@@ -1,18 +1,19 @@
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
-
+#include "rg/Error.h"
+#include "rg/Texture2D.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
 #include <learnopengl/filesystem.h>
 #include <learnopengl/shader.h>
 #include <learnopengl/camera.h>
 #include <learnopengl/model.h>
+#include <iostream>
+#include <vector>
 
 #include <iostream>
 
@@ -51,17 +52,23 @@ struct PointLight {
     float quadratic;
 };
 
+struct directionalLight {
+    glm::vec3 direction;
+    glm::vec3 ambient;
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+};
+
 struct ProgramState {
     glm::vec3 clearColor = glm::vec3(0);
     bool ImGuiEnabled = false;
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
-    glm::vec3 churchPosition = glm::vec3(0.0f);
-    float churchScale = 1.0f;
-    glm::vec3 rotateAxis = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 churchPosition = glm::vec3(0.0f, -1.0f, 1.0f);
+    float churchScale = 0.1f;
     PointLight pointLight;
     ProgramState()
-            : camera(glm::vec3(-10.0f, 0.0f, -1.0f)) {}
+            : camera(glm::vec3(3.0f, 0.0f, 0.0f)) {}
 
     void SaveToFile(std::string filename);
 
@@ -163,6 +170,30 @@ int main() {
     // build and compile shaders
     // -------------------------
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
+    float verticesPlane[] = {
+            -100.0f, 0.25f, -100.0f,
+            100.0f, 0.25f, -100.0f,
+            -100.0f, 0.25f, 100.0f,
+            100.0f, 0.25f, -100.0f,
+            -100.0f, 0.25f, 100.0f,
+            100.0f, 0.25f, 100.0f
+    };
+
+    Shader planeShader("resources/shaders/plane.vs", "resources/shaders/plane.fs");
+    unsigned int VBO, VAO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glBindVertexArray(VAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verticesPlane), verticesPlane, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+    glEnableVertexAttribArray(0);
+
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
     // load models
     // -----------
@@ -231,6 +262,10 @@ int main() {
         ourShader.setMat4("model", model);
         ourModel.Draw(ourShader);
 
+        planeShader.use();
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
         if (programState->ImGuiEnabled)
             DrawImGui(programState);
 
@@ -260,13 +295,13 @@ void processInput(GLFWwindow *window) {
         glfwSetWindowShouldClose(window, true);
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        programState->camera.ProcessKeyboard(FORWARD, deltaTime);
+        programState->camera.ProcessKeyboard(FORWARD, deltaTime, true);
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        programState->camera.ProcessKeyboard(BACKWARD, deltaTime);
+        programState->camera.ProcessKeyboard(BACKWARD, deltaTime, true);
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        programState->camera.ProcessKeyboard(LEFT, deltaTime);
+        programState->camera.ProcessKeyboard(LEFT, deltaTime, true);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        programState->camera.ProcessKeyboard(RIGHT, deltaTime);
+        programState->camera.ProcessKeyboard(RIGHT, deltaTime, true);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
