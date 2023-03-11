@@ -144,7 +144,7 @@ int main() {
         return -1;
     }
 
-    // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
+    // tell stb_image.h to flip loaded grassTextureDiff's on the y-axis (before loading model).
     stbi_set_flip_vertically_on_load(true);
 
     programState = new ProgramState;
@@ -171,12 +171,12 @@ int main() {
     // -------------------------
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
     float verticesPlane[] = {
-            -100.0f, 0.25f, -100.0f,
-            100.0f, 0.25f, -100.0f,
-            -100.0f, 0.25f, 100.0f,
-            100.0f, 0.25f, -100.0f,
-            -100.0f, 0.25f, 100.0f,
-            100.0f, 0.25f, 100.0f
+            -100.0f, 0.25f, -100.0f, 0.0f, 0.0f,
+            100.0f, 0.25f, -100.0f, 1.0f, 0.0f,
+            -100.0f, 0.25f, 100.0f, 0.0f, 1.0f,
+            100.0f, 0.25f, -100.0f,1.0f, 0.0f,
+            -100.0f, 0.25f, 100.0f,0.0f, 1.0f,
+            100.0f, 0.25f, 100.0f, 1.0f, 1.0f
     };
 
     Shader planeShader("resources/shaders/plane.vs", "resources/shaders/plane.fs");
@@ -187,13 +187,33 @@ int main() {
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(verticesPlane), verticesPlane, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+
+    unsigned int grassTextureDiff;
+    glGenTextures(1, &grassTextureDiff);
+    glBindTexture(GL_TEXTURE_2D, grassTextureDiff);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load("resources/textures/grassy_d.png", &width, &height, &nrChannels, 0);
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cout << "Failed to load grassTextureDiff" << std::endl;
+    }
+    stbi_image_free(data);
 
     // load models
     // -----------
@@ -263,6 +283,8 @@ int main() {
         ourModel.Draw(ourShader);
 
         planeShader.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, grassTextureDiff);
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
