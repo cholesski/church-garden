@@ -1,8 +1,0 @@
-/home/amnesia/Downloads/clion/clion-2022.2.4/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/home/amnesia/Downloads/clion/clion-2022.2.4/bin/ninja/linux/ninja -G Ninja -S /home/amnesia/project_base -B /home/amnesia/project_base/cmake-build-debug
--- Found ASSIMP: /usr/lib/x86_64-linux-gnu/libassimp.so
--- Configuring done
-CMake Error at CMakeLists.txt:45 (add_executable):
-  No SOURCES given to target: project_base
-
-
-CMake Generate step failed.  Build files cannot be regenerated correctly.
