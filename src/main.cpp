@@ -1,4 +1,3 @@
-
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -26,6 +25,11 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
+
+unsigned int loadTexture(char const * path, bool gammaCorrection);
+
+void drawChurch(Shader ourShader, Model churchModel);
+void drawPlane(Shader ourShader, unsigned int planeVAO, unsigned int floorTexture);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -64,8 +68,10 @@ struct ProgramState {
     bool ImGuiEnabled = false;
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
-    glm::vec3 churchPosition = glm::vec3(0.0f, -1.0f, 1.0f);
+    glm::vec3 churchPosition = glm::vec3(0.0f, -0.1f, 0.0f);
+    glm::vec3 planePosition = glm::vec3(0.0f, 5.0f, 0.0f);
     float churchScale = 0.1f;
+    float planeScale = 10.0;
     PointLight pointLight;
     ProgramState()
             : camera(glm::vec3(3.0f, 0.0f, 0.0f)) {}
@@ -158,10 +164,19 @@ int main() {
     ImGuiIO &io = ImGui::GetIO();
     (void) io;
 
-
-
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330 core");
+
+    float planeVertices[] = {
+            // positions                     // normals                       // texcoords
+            1.0f, -0.5f,  1.0f,  0.0f, 1.0f, 0.0f,      1.0f,  0.0f,
+            -1.0f, -0.5f,  1.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
+            -1.0f, -0.5f, -1.0f,  0.0f, 1.0f, 0.0f,   0.0f, 1.0f,
+
+            1.0f, -0.5f,  1.0f,  0.0f, 1.0f, 0.0f,  1.0f,  0.0f,
+            -1.0f, -0.5f, -1.0f,  0.0f, 1.0f, 0.0f,   0.0f, 1.0f,
+            1.0f, -0.5f, -1.0f,  0.0f, 1.0f, 0.0f,  1.0f, 1.0f
+    };
 
     // configure global opengl state
     // -----------------------------
@@ -170,35 +185,29 @@ int main() {
     // build and compile shaders
     // -------------------------
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
-    float verticesPlane[] = {
-            -100.0f, 0.25f, -100.0f,
-            100.0f, 0.25f, -100.0f,
-            -100.0f, 0.25f, 100.0f,
-            100.0f, 0.25f, -100.0f,
-            -100.0f, 0.25f, 100.0f,
-            100.0f, 0.25f, 100.0f
-    };
-
-    Shader planeShader("resources/shaders/plane.vs", "resources/shaders/plane.fs");
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verticesPlane), verticesPlane, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-    glEnableVertexAttribArray(0);
-
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
+    //Shader planeShader("resources/shaders/plane.vs", "resources/shaders/plane.fs");
 
     // load models
     // -----------
-    Model ourModel("resources/objects/Obj/Parish Church Model+.obj");
-    ourModel.SetShaderTextureNamePrefix("material.");
+    Model churchModel("resources/objects/Obj/Parish Church Model+.obj");
+    churchModel.SetShaderTextureNamePrefix("material.");
+
+    unsigned int planeTexture = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str(), true);
+
+    // plane VAO
+    unsigned int planeVAO, planeVBO;
+    glGenVertexArrays(1, &planeVAO);
+    glGenBuffers(1, &planeVBO);
+    glBindVertexArray(planeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    glBindVertexArray(0);
 
     PointLight& pointLight = programState->pointLight;
     pointLight.position = glm::vec3(0.0f, 0.0, 0.0);
@@ -209,11 +218,6 @@ int main() {
     pointLight.constant = 1.0f;
     pointLight.linear = 0.09f;
     pointLight.quadratic = 0.032f;
-
-
-
-    // draw in wireframe
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // render loop
     // -----------
@@ -227,7 +231,6 @@ int main() {
         // input
         // -----
         processInput(window);
-
 
         // render
         // ------
@@ -253,23 +256,16 @@ int main() {
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
 
-        // render the loaded model
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model,
-                               programState->churchPosition); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(programState->churchScale));    // it's a bit too big for our scene, so scale it down
-        model = glm::rotate(model, 90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
-        ourShader.setMat4("model", model);
-        ourModel.Draw(ourShader);
+        // render the loaded models
+        //church
+        drawChurch(ourShader, churchModel);
 
-        planeShader.use();
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        //plane
+        drawPlane(ourShader, planeVAO, planeTexture);
+
 
         if (programState->ImGuiEnabled)
             DrawImGui(programState);
-
-
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -382,4 +378,77 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
     }
+}
+
+// utility function for loading a 2D texture from file
+// ---------------------------------------------------
+unsigned int loadTexture(char const * path, bool gammaCorrection)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum internalFormat;
+        GLenum dataFormat;
+        if (nrComponents == 1)
+        {
+            internalFormat = dataFormat = GL_RED;
+        }
+        else if (nrComponents == 3)
+        {
+            internalFormat = gammaCorrection ? GL_SRGB : GL_RGB;
+            dataFormat = GL_RGB;
+        }
+        else if (nrComponents == 4)
+        {
+            internalFormat = gammaCorrection ? GL_SRGB_ALPHA : GL_RGBA;
+            dataFormat = GL_RGBA;
+        }
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
+}
+
+void drawChurch(Shader ourShader, Model churchModel)
+{
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model,
+                           programState->churchPosition); // translate it down so it's at the center of the scene
+    model = glm::scale(model,
+                       glm::vec3(programState->churchScale));    // it's a bit too big for our scene, so scale it down
+    model = glm::rotate(model, 90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+    ourShader.setMat4("model", model);
+    churchModel.Draw(ourShader);
+}
+
+void drawPlane(Shader ourShader, unsigned int planeVAO, unsigned int planeTexture)
+{
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, programState->planePosition);
+    model = glm::scale(model, glm::vec3(programState->planeScale));
+    ourShader.setMat4("model", model);
+    glBindVertexArray(planeVAO);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, planeTexture);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
 }
