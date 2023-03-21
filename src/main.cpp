@@ -549,6 +549,7 @@ void drawSun(Shader ourShader, Model sunModel){
     sunModel.Draw(ourShader);
 }
 
+
 unsigned int loadCubemap(vector<std::string> &faces)
 {
     unsigned int textureID;
@@ -578,3 +579,4 @@ unsigned int loadCubemap(vector<std::string> &faces)
 
     return textureID;
 }
+

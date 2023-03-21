@@ -10,5 +10,7 @@ void main()
 {
     vec3 normal = normalize(Normal);
     vec3 viewDir = normalize(viewPosition - FragPos);
-    FragColor = vec4(0.97255f, 0.94902f, 0.41176f, 0.0f);
+
+    FragColor = vec4(1.0);
+
 }
