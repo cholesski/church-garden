@@ -18,8 +18,8 @@ Ks 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 1
-map_Kd C:\\Users\\samsung\\Desktop\\Neil\\NEIL'S CREATIONS\\Blender Projects\\NEIL\\JPeg Textures\\Texture Images\\Bricks\\Brick 006Pale.jpg
-map_Disp C:\\Users\\samsung\\Desktop\\Neil\\NEIL'S CREATIONS\\Blender Projects\\NEIL\\JPeg Textures\\Texture Images\\Bricks\\Brick 004PaleBUMP.jpg
+map_Kd BrickNormalMap.jpg
+map_Disp BrickNormalMap.jpg
 
 newmtl DarkStoneFlatShade
 Ns 96.078431
@@ -29,7 +29,7 @@ Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd C:\Users\samsung\Desktop\Neil\NEIL'S CREATIONS\Blender Projects\NEIL\JPeg Textures\Texture Images\Bricks\Brick 005Pale.jpg
+map_Kd DarkStone.jpg
 
 newmtl DarkStoneFlatShade_BrickRedTiled.png
 Ns 96.078431
@@ -39,7 +39,7 @@ Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd C:\Users\samsung\Desktop\Neil\NEIL'S CREATIONS\Blender Projects\ARCHITECTURE\PARISH CHURCH\BeigeRedTiledGrey.jpg
+map_Kd DarkStone.jpg
 
 newmtl DarkStoneFlatShade_Brick_006Pale.jpg
 Ns 96.078431
@@ -49,7 +49,7 @@ Ks 0.500000 0.500000 0.500000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd C:\Users\samsung\Desktop\Neil\NEIL'S CREATIONS\Blender Projects\NEIL\JPeg Textures\Texture Images\Bricks\Brick 006Pale.jpg
+map_Kd DarkStone.jpg
 
 newmtl DarkStoneFlatShade_NONE
 Ns 96.078431
@@ -86,8 +86,8 @@ Ks 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 1
-map_Kd C:\Users\samsung\Desktop\Neil\NEIL'S CREATIONS\Blender Projects\NEIL\JPeg Textures\Texture Images\Bricks\Brick 005Pale.jpg
-map_Disp C:\\Users\\samsung\\Desktop\\Neil\\NEIL'S CREATIONS\\Blender Projects\\NEIL\\JPeg Textures\\Texture Images\\Bricks\\Brick 004PaleBUMP.jpg
+map_Kd LightStone.jpg
+map_Disp LightStone.jpg
 
 newmtl LightStoneFlatShade_NONE
 Ns 96.078431
@@ -96,9 +96,8 @@ Kd 0.402309 0.325792 0.213085
 Ks 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
-illum 1
-map_Kd C:\\Users\\samsung\\Desktop\\Neil\\NEIL'S CREATIONS\\Blender Projects\\NEIL\\JPeg Textures\\Texture Images\\Bricks\\Brick 006Pale.jpg
-map_Disp C:\\Users\\samsung\\Desktop\\Neil\\NEIL'S CREATIONS\\Blender Projects\\NEIL\\JPeg Textures\\Texture Images\\Bricks\\Brick 004PaleBUMP.jpg
+illum 1LightStone.jpg
+map_Disp LightStone.jpg
 
 newmtl LightStoneSmoothShade
 Ns 96.078431
@@ -108,8 +107,8 @@ Ks 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 1
-map_Kd C:\Users\samsung\Desktop\Neil\NEIL'S CREATIONS\Blender Projects\NEIL\JPeg Textures\Texture Images\Bricks\Brick 005Pale.jpg
-map_Disp C:\\Users\\samsung\\Desktop\\Neil\\NEIL'S CREATIONS\\Blender Projects\\NEIL\\JPeg Textures\\Texture Images\\Bricks\\Brick 004PaleBUMP.jpg
+map_Kd LightStone.jpg
+map_Disp LightStone.jpg
 
 newmtl LightStoneSmoothShade_Brick_006Pale.jpg
 Ns 96.078431
@@ -119,8 +118,8 @@ Ks 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 1
-map_Kd C:\Users\samsung\Desktop\Neil\NEIL'S CREATIONS\Blender Projects\NEIL\JPeg Textures\Texture Images\Bricks\Brick 006Pale.jpg
-map_Disp C:\\Users\\samsung\\Desktop\\Neil\\NEIL'S CREATIONS\\Blender Projects\\NEIL\\JPeg Textures\\Texture Images\\Bricks\\Brick 004PaleBUMP.jpg
+map_Kd LightStone.jpg
+map_Disp LightStone.jpg
 
 newmtl LightStoneSmoothShade_NONE
 Ns 96.078431
@@ -130,5 +129,5 @@ Ks 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 1
-map_Kd C:\\Users\\samsung\\Desktop\\Neil\\NEIL'S CREATIONS\\Blender Projects\\NEIL\\JPeg Textures\\Texture Images\\Bricks\\Brick 006Pale.jpg
-map_Disp C:\\Users\\samsung\\Desktop\\Neil\\NEIL'S CREATIONS\\Blender Projects\\NEIL\\JPeg Textures\\Texture Images\\Bricks\\Brick 004PaleBUMP.jpg
+map_Kd LightStone.jpg
+map_DispLightStone.jpg
