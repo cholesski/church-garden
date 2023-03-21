@@ -30,6 +30,9 @@ unsigned int loadTexture(char const * path, bool gammaCorrection);
 
 void drawChurch(Shader ourShader, Model churchModel);
 void drawPlane(Shader ourShader, unsigned int planeVAO, unsigned int floorTexture);
+void drawSun(Shader ourShader, Model sunModel);
+
+unsigned int loadCubemap(vector<std::string> &faces);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -70,6 +73,7 @@ struct ProgramState {
     bool CameraMouseMovementUpdateEnabled = true;
     glm::vec3 churchPosition = glm::vec3(0.0f, -0.1f, 0.0f);
     glm::vec3 planePosition = glm::vec3(0.0f, 5.0f, 0.0f);
+    glm::vec3 sunPosition = glm::vec3 (0.0f, 13.0f, 13.0f);
     float churchScale = 0.1f;
     float planeScale = 10.0;
     PointLight pointLight;
@@ -178,6 +182,51 @@ int main() {
             1.0f, -0.5f, -1.0f,  0.0f, 1.0f, 0.0f,  1.0f, 1.0f
     };
 
+    float skyboxVertices[] = {
+            // positions
+            -1.0f,  1.0f, -1.0f,
+            -1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+
+            -1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f, -1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
+
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+
+            -1.0f, -1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f, -1.0f,  1.0f,
+            -1.0f, -1.0f,  1.0f,
+
+            -1.0f,  1.0f, -1.0f,
+            1.0f,  1.0f, -1.0f,
+            1.0f,  1.0f,  1.0f,
+            1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f,  1.0f,
+            -1.0f,  1.0f, -1.0f,
+
+            -1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f,  1.0f,
+            1.0f, -1.0f,  1.0f
+    };
+
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
@@ -185,12 +234,14 @@ int main() {
     // build and compile shaders
     // -------------------------
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
-    //Shader planeShader("resources/shaders/plane.vs", "resources/shaders/plane.fs");
+    Shader sunShader("resources/shaders/sun.vs", "resources/shaders/sun.fs");
+    Shader skyboxShader("resources/shaders/skyBox.vs","resources/shaders/skyBox.fs");
 
     // load models
     // -----------
     Model churchModel("resources/objects/Obj/Parish Church Model+.obj");
     churchModel.SetShaderTextureNamePrefix("material.");
+    Model sunModel("resources/objects/sun/sphere.OBJ");
 
     unsigned int planeTexture = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str(), true);
 
@@ -209,15 +260,35 @@ int main() {
     glEnableVertexAttribArray(2);
     glBindVertexArray(0);
 
-    PointLight& pointLight = programState->pointLight;
-    pointLight.position = glm::vec3(0.0f, 0.0, 0.0);
-    pointLight.ambient = glm::vec3(0.8, 0.8, 0.8);
-    pointLight.diffuse = glm::vec3(0.9, 0.9, 0.9);
-    pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
+    // skybox VAO
+    unsigned int skyboxVAO, skyboxVBO;
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    pointLight.constant = 1.0f;
-    pointLight.linear = 0.09f;
-    pointLight.quadratic = 0.032f;
+    vector<std::string> faces
+            {
+                    FileSystem::getPath("resources/textures/skybox_textures/right.png"),
+                    FileSystem::getPath("resources/textures/skybox_textures/left.png"),
+                    FileSystem::getPath("resources/textures/skybox_textures/top.png"),
+                    FileSystem::getPath("resources/textures/skybox_textures/bottom.png"),
+                    FileSystem::getPath("resources/textures/skybox_textures/front.png"),
+                    FileSystem::getPath("resources/textures/skybox_textures/back.png")
+            };
+    unsigned int cubemapTexture = loadCubemap(faces);
+
+    skyboxShader.use();
+    skyboxShader.setInt("skybox", 0);
+
+    PointLight& directionalLight = programState->pointLight;
+    directionalLight.position = programState->sunPosition;
+    directionalLight.ambient = glm::vec3(0.3f, 0.3f, 0.3f);
+    directionalLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
+    directionalLight.specular = glm::vec3(0.4, 0.4, 0.4);
 
     // render loop
     // -----------
@@ -238,15 +309,14 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // don't forget to enable shader before setting uniforms
+        // draw objects on scene
         ourShader.use();
-        pointLight.position = glm::vec3(4.0 * cos(currentFrame), 4.0f, 4.0 * sin(currentFrame));
-        ourShader.setVec3("pointLight.position", pointLight.position);
-        ourShader.setVec3("pointLight.ambient", pointLight.ambient);
-        ourShader.setVec3("pointLight.diffuse", pointLight.diffuse);
-        ourShader.setVec3("pointLight.specular", pointLight.specular);
-        ourShader.setFloat("pointLight.constant", pointLight.constant);
-        ourShader.setFloat("pointLight.linear", pointLight.linear);
-        ourShader.setFloat("pointLight.quadratic", pointLight.quadratic);
+        directionalLight.position = programState->sunPosition;
+        ourShader.setVec3("directionalLight.direction", directionalLight.position);
+        ourShader.setVec3("directionalLight.ambient", directionalLight.ambient);
+        ourShader.setVec3("directionalLight.diffuse", directionalLight.diffuse);
+        ourShader.setVec3("directionalLight.specular", directionalLight.specular);
+
         ourShader.setVec3("viewPosition", programState->camera.Position);
         ourShader.setFloat("material.shininess", 32.0f);
         // view/projection transformations
@@ -262,7 +332,26 @@ int main() {
 
         //plane
         drawPlane(ourShader, planeVAO, planeTexture);
+        sunShader.use();
+        sunShader.setMat4("projection", projection);
+        sunShader.setMat4("view", view);
 
+        //sun
+        drawSun(sunShader, sunModel);
+
+        //skybox
+        glDepthFunc(GL_LEQUAL);
+        skyboxShader.use();
+        view = glm::mat4(glm::mat3(programState->camera.GetViewMatrix()));
+        skyboxShader.setMat4("view", view);
+        skyboxShader.setMat4("projection", projection);
+        // skybox cube
+        glBindVertexArray(skyboxVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glBindVertexArray(0);
+        glDepthFunc(GL_LESS);
 
         if (programState->ImGuiEnabled)
             DrawImGui(programState);
@@ -451,4 +540,41 @@ void drawPlane(Shader ourShader, unsigned int planeVAO, unsigned int planeTextur
     glBindTexture(GL_TEXTURE_2D, planeTexture);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
+}
+
+void drawSun(Shader ourShader, Model sunModel){
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, programState->sunPosition);
+    ourShader.setMat4("model", model);
+    sunModel.Draw(ourShader);
+}
+
+unsigned int loadCubemap(vector<std::string> &faces)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
 }
