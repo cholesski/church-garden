@@ -30,6 +30,7 @@ unsigned int loadTexture(char const * path, bool gammaCorrection);
 
 void drawChurch(Shader ourShader, Model churchModel);
 void drawPlane(Shader ourShader, unsigned int planeVAO, unsigned int floorTexture);
+void drawSun(Shader ourShader, Model sunModel);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -70,6 +71,7 @@ struct ProgramState {
     bool CameraMouseMovementUpdateEnabled = true;
     glm::vec3 churchPosition = glm::vec3(0.0f, -0.1f, 0.0f);
     glm::vec3 planePosition = glm::vec3(0.0f, 5.0f, 0.0f);
+    glm::vec3 sunPosition = glm::vec3 (0.0f, 13.0f, 13.0f);
     float churchScale = 0.1f;
     float planeScale = 10.0;
     PointLight pointLight;
@@ -185,12 +187,14 @@ int main() {
     // build and compile shaders
     // -------------------------
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
-    //Shader planeShader("resources/shaders/plane.vs", "resources/shaders/plane.fs");
+    Shader sunShader("resources/shaders/sun.vs", "resources/shaders/sun.fs");
+
 
     // load models
     // -----------
     Model churchModel("resources/objects/Obj/Parish Church Model+.obj");
     churchModel.SetShaderTextureNamePrefix("material.");
+    Model sunModel("resources/objects/sun/sphere.OBJ");
 
     unsigned int planeTexture = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str(), true);
 
@@ -209,15 +213,11 @@ int main() {
     glEnableVertexAttribArray(2);
     glBindVertexArray(0);
 
-    PointLight& pointLight = programState->pointLight;
-    pointLight.position = glm::vec3(0.0f, 0.0, 0.0);
-    pointLight.ambient = glm::vec3(0.8, 0.8, 0.8);
-    pointLight.diffuse = glm::vec3(0.9, 0.9, 0.9);
-    pointLight.specular = glm::vec3(1.0, 1.0, 1.0);
-
-    pointLight.constant = 1.0f;
-    pointLight.linear = 0.09f;
-    pointLight.quadratic = 0.032f;
+    PointLight& directionalLight = programState->pointLight;
+    directionalLight.position = programState->sunPosition;
+    directionalLight.ambient = glm::vec3(0.8, 0.8, 0.8);
+    directionalLight.diffuse = glm::vec3(0.9, 0.9, 0.9);
+    directionalLight.specular = glm::vec3(1.0, 1.0, 1.0);
 
     // render loop
     // -----------
@@ -239,14 +239,12 @@ int main() {
 
         // don't forget to enable shader before setting uniforms
         ourShader.use();
-        pointLight.position = glm::vec3(4.0 * cos(currentFrame), 4.0f, 4.0 * sin(currentFrame));
-        ourShader.setVec3("pointLight.position", pointLight.position);
-        ourShader.setVec3("pointLight.ambient", pointLight.ambient);
-        ourShader.setVec3("pointLight.diffuse", pointLight.diffuse);
-        ourShader.setVec3("pointLight.specular", pointLight.specular);
-        ourShader.setFloat("pointLight.constant", pointLight.constant);
-        ourShader.setFloat("pointLight.linear", pointLight.linear);
-        ourShader.setFloat("pointLight.quadratic", pointLight.quadratic);
+        directionalLight.position = programState->sunPosition;
+        ourShader.setVec3("directionalLight.direction", directionalLight.position);
+        ourShader.setVec3("directionalLight.ambient", directionalLight.ambient);
+        ourShader.setVec3("directionalLight.diffuse", directionalLight.diffuse);
+        ourShader.setVec3("directionalLight.specular", directionalLight.specular);
+
         ourShader.setVec3("viewPosition", programState->camera.Position);
         ourShader.setFloat("material.shininess", 32.0f);
         // view/projection transformations
@@ -262,7 +260,11 @@ int main() {
 
         //plane
         drawPlane(ourShader, planeVAO, planeTexture);
+        sunShader.use();
+        sunShader.setMat4("projection", projection);
+        sunShader.setMat4("view", view);
 
+        drawSun(sunShader, sunModel);
 
         if (programState->ImGuiEnabled)
             DrawImGui(programState);
@@ -451,4 +453,11 @@ void drawPlane(Shader ourShader, unsigned int planeVAO, unsigned int planeTextur
     glBindTexture(GL_TEXTURE_2D, planeTexture);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
+}
+
+void drawSun(Shader ourShader, Model sunModel){
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, programState->sunPosition);
+    ourShader.setMat4("model", model);
+    sunModel.Draw(ourShader);
 }
