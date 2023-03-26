@@ -16,6 +16,8 @@
 
 #include <iostream>
 
+#define NUM_OF_FLOWERS 10
+
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
@@ -232,50 +234,6 @@ int main() {
             1.0f, -1.0f,  1.0f
     };
 
-    float cubeVertices[] = {
-            // positions          // texture Coords
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-            0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-            -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-            -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
 
     float transparentVertices[] = {
             // positions         // texture Coords (swapped y coordinates because texture is flipped upside down)
@@ -287,7 +245,6 @@ int main() {
             1.0f, -0.5f,  0.0f,  1.0f,  1.0f,
             1.0f,  0.5f,  0.0f,  1.0f,  0.0f
     };
-
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
@@ -336,18 +293,6 @@ int main() {
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-    //cube VAO
-    unsigned int cubeVAO, cubeVBO;
-    glGenVertexArrays(1, &cubeVAO);
-    glGenBuffers(1, &cubeVBO);
-    glBindVertexArray(cubeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-
     // transparent VAO
     unsigned int transparentVAO, transparentVBO;
     glGenVertexArrays(1, &transparentVAO);
@@ -361,11 +306,10 @@ int main() {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
 
-    unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/vegetation_textures/roses.png").c_str(), true);
-
-    vector<glm::vec3> vegetation;
-    vegetation.push_back(glm::vec3(-1.5f,  0.0f, -0.48f));
-    vegetation.push_back(glm::vec3( 1.5f,  0.0f,  0.51f));
+    unsigned int flowerTex1 = loadTexture(FileSystem::getPath("resources/textures/vegetation_textures/flowers1.png").c_str(), true);
+    unsigned int flowerTex2 = loadTexture(FileSystem::getPath("resources/textures/vegetation_textures/flowers2.png").c_str(), true);
+    unsigned int flowerTex3 = loadTexture(FileSystem::getPath("resources/textures/vegetation_textures/flowers3.png").c_str(), true);
+    unsigned int flowerTex4 = loadTexture(FileSystem::getPath("resources/textures/vegetation_textures/flowers4.png").c_str(), true);
 
     vector<std::string> faces
             {
@@ -386,6 +330,20 @@ int main() {
     directionalLight.ambient = glm::vec3(0.3f, 0.3f, 0.3f);
     directionalLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
     directionalLight.specular = glm::vec3(0.4, 0.4, 0.4);
+
+    vector<glm::vec3> flowers
+            {
+                    glm::vec3(-2.5f, 0.5f, -0.48f),
+                    glm::vec3( 1.5f, 0.5f, 1.51f),
+                    glm::vec3( 1.0f, 0.5f, 0.7f),
+                    glm::vec3(-0.34f, 0.5f, -1.3f),
+                    glm::vec3 (1.55f, 0.5f, -0.6f),
+                    glm::vec3(-1.5f, 0.5f, -1.48f),
+                    glm::vec3( -1.5f, 0.5f, -1.51f),
+                    glm::vec3( -2.3f, 0.5f, -2.7f),
+                    glm::vec3(-0.34f, 0.5f, -2.3f),
+                    glm::vec3 (1.55f, 0.5f, -3.6f)
+            };
 
     glm::vec3 pointLightPositions[] = {
             glm::vec3(2.0f, 2.0f, 0.8f),
@@ -476,36 +434,39 @@ int main() {
         drawPlane(ourShader, planeVAO, planeTexture);
 
         // cubes
-        glBindVertexArray(cubeVAO);
-        glm::mat4 model = glm::translate(model, glm::vec3(2.0f, 0.5f, 1.0f));
-        ourShader.setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(1.0f, 0.5f, 1.0f));
-        ourShader.setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        // vegetation
         flowerShader.use();
+        flowerShader.setInt("texture1", 0);
+        flowerShader.setMat4("view", view);
+        flowerShader.setMat4("projection", projection);
+
+        // flowers
+        int x = 0;
+        int z = 0;
         glBindVertexArray(transparentVAO);
-        glBindTexture(GL_TEXTURE_2D, transparentTexture);
-        for (unsigned int i = 0; i < vegetation.size(); i++)
-        {
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, vegetation[i]);
-            ourShader.setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
+        for (unsigned int i = 0; i < flowers.size(); i++){
+            {
+                if (i % 5 == 0){
+                    glBindTexture(GL_TEXTURE_2D, flowerTex1);
+                } else if (i % 4 == 1){
+                    glBindTexture(GL_TEXTURE_2D, flowerTex2);
+                } else if (i % 4 == 3){
+                    glBindTexture(GL_TEXTURE_2D, flowerTex3);
+                } else{
+                    glBindTexture(GL_TEXTURE_2D, flowerTex4);
+                }
+                glm::mat4 model = glm::mat4(1.0f);
+                model = glm::scale(model, glm::vec3(0.7f, 0.7f, 0.7f));
+                model = glm::translate(model, flowers[i]);
+                ourShader.setMat4("model", model);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+            }
         }
-
-
         sunShader.use();
         sunShader.setMat4("projection", projection);
         sunShader.setMat4("view", view);
 
-
         //sun
         drawSun(sunShader, sunModel);
-
 
         //skybox
         glDepthFunc(GL_LEQUAL);
@@ -722,7 +683,7 @@ void drawSun(Shader ourShader, Model sunModel){
 
 void drawAngel(Shader ourShader, Model angelModel){
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+    model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
 //    model = glm::rotate(model, -100.0f, glm::vec3(0.0f, 1.0f, 0.0f));
     model = glm::translate(model, programState->angelPosition);
     ourShader.setMat4("model", model);
