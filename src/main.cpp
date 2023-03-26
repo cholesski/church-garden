@@ -31,12 +31,15 @@ unsigned int loadTexture(char const * path, bool gammaCorrection);
 void drawChurch(Shader ourShader, Model churchModel);
 void drawPlane(Shader ourShader, unsigned int planeVAO, unsigned int floorTexture);
 void drawSun(Shader ourShader, Model sunModel);
+void drawAngel(Shader ourShader, Model angelModel);
+void drawLamp(Shader ourShader, Model lampModel);
 
 unsigned int loadCubemap(vector<std::string> &faces);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+bool spotlightOn = true;
 
 // camera
 
@@ -74,6 +77,8 @@ struct ProgramState {
     glm::vec3 churchPosition = glm::vec3(0.0f, -0.1f, 0.0f);
     glm::vec3 planePosition = glm::vec3(0.0f, 5.0f, 0.0f);
     glm::vec3 sunPosition = glm::vec3 (0.0f, 13.0f, 13.0f);
+    glm::vec3 lampPosition = glm::vec3(2.0f, 0.05f, 0.8f);
+    glm::vec3 angelPosition = glm::vec3(-20.0f, 0.05f, 0.8f);
     float churchScale = 0.1f;
     float planeScale = 10.0;
     PointLight pointLight;
@@ -242,6 +247,10 @@ int main() {
     Model churchModel("resources/objects/Obj/Parish Church Model+.obj");
     churchModel.SetShaderTextureNamePrefix("material.");
     Model sunModel("resources/objects/sun/sphere.OBJ");
+    Model angelModel("resources/objects/engel/source/Engel_C/Engel_C.obj");
+    angelModel.SetShaderTextureNamePrefix("material.");
+    Model lampModel("resources/objects/street_lamp/STLamp.obj");
+    lampModel.SetShaderTextureNamePrefix("material.");
 
     unsigned int planeTexture = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str(), true);
 
@@ -290,6 +299,11 @@ int main() {
     directionalLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
     directionalLight.specular = glm::vec3(0.4, 0.4, 0.4);
 
+    glm::vec3 pointLightPositions[] = {
+            glm::vec3( 2.0f, 2.0f, 0.8f),
+            glm::vec3(-18.0f, 0.05f, 0.8f)
+    };
+
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window)) {
@@ -311,11 +325,46 @@ int main() {
         // don't forget to enable shader before setting uniforms
         // draw objects on scene
         ourShader.use();
+
+        //directional light (from moon)
         directionalLight.position = programState->sunPosition;
         ourShader.setVec3("directionalLight.direction", directionalLight.position);
         ourShader.setVec3("directionalLight.ambient", directionalLight.ambient);
         ourShader.setVec3("directionalLight.diffuse", directionalLight.diffuse);
         ourShader.setVec3("directionalLight.specular", directionalLight.specular);
+
+        //point lights
+        ourShader.setVec3("pointLights[0].position", pointLightPositions[0]);
+        ourShader.setVec3("pointLights[0].ambient", 1.0f, 1.0f, 1.0f);
+        ourShader.setVec3("pointLights[0].diffuse", 1.0f, 1.0f, 1.0f);
+        ourShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+        ourShader.setFloat("pointLights[0].constant", 1.0f);
+        ourShader.setFloat("pointLights[0].linear", 0.02f);
+        ourShader.setFloat("pointLights[0].quadratic", 0.1f);
+
+        ourShader.setVec3("pointLights[1].position", pointLightPositions[1]);
+        ourShader.setVec3("pointLights[1].ambient", 1.0f, 1.0f, 1.0f);
+        ourShader.setVec3("pointLights[1].diffuse", 0.7f, 0.7f, 1.1f);
+        ourShader.setVec3("pointLights[1].specular", 0.3f, 0.3f, 0.3f);
+        ourShader.setFloat("pointLights[1].constant", 1.0f);
+        ourShader.setFloat("pointLights[1].linear", 0.07f);
+        ourShader.setFloat("pointLights[1].quadratic", 0.17f);
+
+        //spotlight
+        ourShader.setVec3("spotlight.position", programState->camera.Position);
+        ourShader.setVec3("spotlight.direction", programState->camera.Front);
+        ourShader.setVec3("spotlight.ambient", 0.0f, 0.0f, 0.0f);
+        ourShader.setVec3("spotlight.diffuse", 0.5f, 0.5f, 0.8f);
+        ourShader.setVec3("spotlight.specular", 0.3f, 0.5f, 0.9f);
+        ourShader.setFloat("spotlight.constant", 1.0f);
+        ourShader.setFloat("spotlight.linear", 0.014f);
+        ourShader.setFloat("spotlight.quadratic", 0.0007f);
+        ourShader.setFloat("spotlight.cutOff", glm::cos(glm::radians(12.5f)));
+        ourShader.setFloat("spotlight.outerCutOff", glm::cos(glm::radians(17.5f)));
+        ourShader.setBool("spotlightOn", spotlightOn);
+        ourShader.setFloat("material.shininess", 128.0f);
+        ourShader.setVec3("viewPosition", programState->camera.Position);
+        ourShader.setFloat("material.shininess", 32.0f);
 
         ourShader.setVec3("viewPosition", programState->camera.Position);
         ourShader.setFloat("material.shininess", 32.0f);
@@ -327,8 +376,13 @@ int main() {
         ourShader.setMat4("view", view);
 
         // render the loaded models
+
         //church
         drawChurch(ourShader, churchModel);
+        //angel
+        drawAngel(ourShader, angelModel);
+        //lamp
+        drawLamp(ourShader, lampModel);
 
         //plane
         drawPlane(ourShader, planeVAO, planeTexture);
@@ -467,6 +521,9 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         }
     }
+    if(glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+        spotlightOn = !spotlightOn;
+    }
 }
 
 // utility function for loading a 2D texture from file
@@ -549,6 +606,22 @@ void drawSun(Shader ourShader, Model sunModel){
     sunModel.Draw(ourShader);
 }
 
+void drawAngel(Shader ourShader, Model angelModel){
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+//    model = glm::rotate(model, -100.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::translate(model, programState->angelPosition);
+    ourShader.setMat4("model", model);
+    angelModel.Draw(ourShader);
+}
+
+void drawLamp(Shader ourShader, Model lampModel){
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
+    model = glm::translate(model, programState->lampPosition);
+    ourShader.setMat4("model", model);
+    lampModel.Draw(ourShader);
+}
 
 unsigned int loadCubemap(vector<std::string> &faces)
 {
