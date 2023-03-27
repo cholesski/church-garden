@@ -16,8 +16,6 @@
 
 #include <iostream>
 
-#define NUM_OF_FLOWERS 10
-
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
@@ -35,6 +33,7 @@ void drawPlane(Shader ourShader, unsigned int planeVAO, unsigned int floorTextur
 void drawSun(Shader ourShader, Model sunModel);
 void drawAngel(Shader ourShader, Model angelModel);
 void drawLamp(Shader ourShader, Model lampModel);
+void drawFlowers(Shader ourShader, Model flowerModel, vector<glm::vec3> flowers);
 
 unsigned int loadCubemap(vector<std::string> &faces);
 
@@ -254,7 +253,7 @@ int main() {
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
     Shader sunShader("resources/shaders/sun.vs", "resources/shaders/sun.fs");
     Shader skyboxShader("resources/shaders/skyBox.vs","resources/shaders/skyBox.fs");
-    Shader flowerShader("resources/shaders/flowers.vs", "resources/shaders/flowers.fs");
+    Shader treeShader("resources/shaders/tree.vs", "resources/shaders/tree.fs");
 
     // load models
     // -----------
@@ -265,6 +264,7 @@ int main() {
     angelModel.SetShaderTextureNamePrefix("material.");
     Model lampModel("resources/objects/street_lamp/STLamp.obj");
     lampModel.SetShaderTextureNamePrefix("material.");
+    Model flowerModel("resources/objects/anemone_hybrida/Anemone_Hybrida_OBJ/anemone_hybrida.obj");
 
     unsigned int planeTexture = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str(), true);
 
@@ -306,10 +306,7 @@ int main() {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glBindVertexArray(0);
 
-    unsigned int flowerTex1 = loadTexture(FileSystem::getPath("resources/textures/vegetation_textures/flowers1.png").c_str(), true);
-    unsigned int flowerTex2 = loadTexture(FileSystem::getPath("resources/textures/vegetation_textures/flowers2.png").c_str(), true);
-    unsigned int flowerTex3 = loadTexture(FileSystem::getPath("resources/textures/vegetation_textures/flowers3.png").c_str(), true);
-    unsigned int flowerTex4 = loadTexture(FileSystem::getPath("resources/textures/vegetation_textures/flowers4.png").c_str(), true);
+    unsigned int treeTex = loadTexture(FileSystem::getPath("resources/textures/vegetation_textures/tree.png").c_str(), true);
 
     vector<std::string> faces
             {
@@ -331,24 +328,25 @@ int main() {
     directionalLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
     directionalLight.specular = glm::vec3(0.4, 0.4, 0.4);
 
-    vector<glm::vec3> flowers
-            {
-                    glm::vec3(-2.5f, 0.5f, -0.48f),
-                    glm::vec3( 1.5f, 0.5f, 1.51f),
-                    glm::vec3( 1.0f, 0.5f, 0.7f),
-                    glm::vec3(-0.34f, 0.5f, -1.3f),
-                    glm::vec3 (1.55f, 0.5f, -0.6f),
-                    glm::vec3(-1.5f, 0.5f, -1.48f),
-                    glm::vec3( -1.5f, 0.5f, -1.51f),
-                    glm::vec3( -2.3f, 0.5f, -2.7f),
-                    glm::vec3(-0.34f, 0.5f, -2.3f),
-                    glm::vec3 (1.55f, 0.5f, -3.6f)
-            };
-
     glm::vec3 pointLightPositions[] = {
             glm::vec3(2.0f, 2.0f, 0.8f),
             glm::vec3(-15.0f, 10.0f, 2.0f),
     };
+
+    vector<glm::vec3> flowers
+            {
+                    glm::vec3(-2.5f, 0.05f, -0.48f),
+                    glm::vec3( 1.5f, 0.05f, 1.51f),
+                    glm::vec3( 1.0f, 0.05f, 0.7f),
+                    glm::vec3(-1.27f, 0.05f, 1.8f),
+                    glm::vec3 (1.55f, 0.05f, -0.6f),
+                    glm::vec3(-1.5f, 0.05f, -1.48f),
+                    glm::vec3( -1.0f, 0.05f, -1.51f),
+                    glm::vec3( -0.43f, 0.05f, 1.74f),
+                    glm::vec3(-0.54f, 0.05f, -0.48f),
+                    glm::vec3 (-2.9f, 0.05f, -0.6f)
+            };
+
 
     // render loop
     // -----------
@@ -429,38 +427,25 @@ int main() {
         drawAngel(ourShader, angelModel);
         //lamp
         drawLamp(ourShader, lampModel);
+        //flowers
+        drawFlowers(ourShader, flowerModel, flowers);
 
         //plane
         drawPlane(ourShader, planeVAO, planeTexture);
 
-        // cubes
-        flowerShader.use();
-        flowerShader.setInt("texture1", 0);
-        flowerShader.setMat4("view", view);
-        flowerShader.setMat4("projection", projection);
-
-        // flowers
-        int x = 0;
-        int z = 0;
+        // tree
+        treeShader.use();
+        treeShader.setInt("texture1", 0);
+        treeShader.setMat4("view", view);
+        treeShader.setMat4("projection", projection);
         glBindVertexArray(transparentVAO);
-        for (unsigned int i = 0; i < flowers.size(); i++){
-            {
-                if (i % 5 == 0){
-                    glBindTexture(GL_TEXTURE_2D, flowerTex1);
-                } else if (i % 4 == 1){
-                    glBindTexture(GL_TEXTURE_2D, flowerTex2);
-                } else if (i % 4 == 3){
-                    glBindTexture(GL_TEXTURE_2D, flowerTex3);
-                } else{
-                    glBindTexture(GL_TEXTURE_2D, flowerTex4);
-                }
-                glm::mat4 model = glm::mat4(1.0f);
-                model = glm::scale(model, glm::vec3(0.7f, 0.7f, 0.7f));
-                model = glm::translate(model, flowers[i]);
-                ourShader.setMat4("model", model);
-                glDrawArrays(GL_TRIANGLES, 0, 6);
-            }
-        }
+        glBindTexture(GL_TEXTURE_2D, treeTex);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::scale(model, glm::vec3(1.5f, 1.5f, 1.5f));
+        model = glm::translate(model, glm::vec3(-0.06f, 0.5f, -2.26f));
+        treeShader.setMat4("model", model);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+
         sunShader.use();
         sunShader.setMat4("projection", projection);
         sunShader.setMat4("view", view);
@@ -698,6 +683,15 @@ void drawLamp(Shader ourShader, Model lampModel){
     lampModel.Draw(ourShader);
 }
 
+void drawFlowers(Shader ourShader, Model flowerModel, vector<glm::vec3> flowers){
+    for (int i = 0; i < flowers.size(); i++){
+        glm::mat4 model = glm::mat4 (1.0f);
+        model = glm::translate(model, flowers[i]);
+        ourShader.setMat4("model", model);
+        flowerModel.Draw(ourShader);
+    }
+}
+
 unsigned int loadCubemap(vector<std::string> &faces)
 {
     unsigned int textureID;
@@ -727,4 +721,3 @@ unsigned int loadCubemap(vector<std::string> &faces)
 
     return textureID;
 }
-
