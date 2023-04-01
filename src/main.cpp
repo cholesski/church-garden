@@ -41,6 +41,8 @@ unsigned int loadCubemap(vector<std::string> &faces);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 bool spotlightOn = true;
+bool bloom = true;
+float exposure = 0.7f;
 
 // camera
 
@@ -77,7 +79,7 @@ struct ProgramState {
     bool CameraMouseMovementUpdateEnabled = true;
     glm::vec3 churchPosition = glm::vec3(0.0f, -0.1f, 0.0f);
     glm::vec3 planePosition = glm::vec3(0.0f, 5.0f, 0.0f);
-    glm::vec3 sunPosition = glm::vec3 (0.0f, 13.0f, 13.0f);
+    glm::vec3 sunPosition = glm::vec3 (-6.0f, 10.0f, 0.93f);
     glm::vec3 lampPosition = glm::vec3(2.0f, 0.05f, 0.8f);
     glm::vec3 angelPosition = glm::vec3(-20.0f, 0.05f, 0.8f);
     float churchScale = 0.1f;
@@ -254,6 +256,8 @@ int main() {
     Shader sunShader("resources/shaders/sun.vs", "resources/shaders/sun.fs");
     Shader skyboxShader("resources/shaders/skyBox.vs","resources/shaders/skyBox.fs");
     Shader treeShader("resources/shaders/tree.vs", "resources/shaders/tree.fs");
+    Shader blurShader("resources/shaders/blur.vs", "resources/shaders/blur.fs");
+    Shader bloomShader("resources/shaders/bloom.vs", "resources/shaders/bloom.fs");
 
     // load models
     // -----------
@@ -267,6 +271,51 @@ int main() {
     Model flowerModel("resources/objects/anemone_hybrida/Anemone_Hybrida_OBJ/anemone_hybrida.obj");
 
     unsigned int planeTexture = loadTexture(FileSystem::getPath("resources/textures/grass.jpg").c_str(), true);
+
+    unsigned int hdrFBO;
+    glGenFramebuffers(1, &hdrFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+    unsigned int colorBuffers[2];
+    glGenTextures(2, colorBuffers);
+    for (unsigned int i = 0; i < 2; i++)
+    {
+        glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorBuffers[i], 0);
+    }
+    // create and attach depth buffer (renderbuffer)
+    unsigned int rboDepth;
+    glGenRenderbuffers(1, &rboDepth);
+    glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+    unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    glDrawBuffers(2, attachments);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Framebuffer not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // ping-pong-framebuffer for blurring
+    unsigned int pingpongFBO[2];
+    unsigned int pingpongColorbuffers[2];
+    glGenFramebuffers(2, pingpongFBO);
+    glGenTextures(2, pingpongColorbuffers);
+    for (unsigned int i = 0; i < 2; i++) {
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[i]);
+        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorbuffers[i], 0);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            std::cout << "Framebuffer not complete!" << std::endl;
+    }
 
     // plane VAO
     unsigned int planeVAO, planeVBO;
@@ -331,6 +380,7 @@ int main() {
     glm::vec3 pointLightPositions[] = {
             glm::vec3(2.0f, 2.0f, 0.8f),
             glm::vec3(-15.0f, 10.0f, 2.0f),
+            programState->sunPosition
     };
 
     vector<glm::vec3> flowers
@@ -365,10 +415,13 @@ int main() {
         // ------
         glClearColor(programState->clearColor.r, programState->clearColor.g, programState->clearColor.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+        //1. render scene into floating point framebuffers
+        glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         // don't forget to enable shader before setting uniforms
         // draw objects on scene
         ourShader.use();
+        glEnable(GL_CULL_FACE);
 
         //directional light (from moon)
         directionalLight.position = programState->sunPosition;
@@ -393,6 +446,14 @@ int main() {
         ourShader.setFloat("pointLights[1].constant", 1.0f);
         ourShader.setFloat("pointLights[1].linear", 0.07f);
         ourShader.setFloat("pointLights[1].quadratic", 0.17f);
+
+        ourShader.setVec3("pointLights[2].position", pointLightPositions[1]);
+        ourShader.setVec3("pointLights[2].ambient", 10.0f, 10.0f, 10.0f);
+        ourShader.setVec3("pointLights[2].diffuse", 0.7f, 0.7f, 1.1f);
+        ourShader.setVec3("pointLights[2].specular", 0.3f, 0.3f, 0.3f);
+        ourShader.setFloat("pointLights[2].constant", 1.0f);
+        ourShader.setFloat("pointLights[2].linear", 0.07f);
+        ourShader.setFloat("pointLights[2].quadratic", 0.17f);
 
         //spotlight
         ourShader.setVec3("spotlight.position", programState->camera.Position);
@@ -429,9 +490,10 @@ int main() {
         drawLamp(ourShader, lampModel);
         //flowers
         drawFlowers(ourShader, flowerModel, flowers);
-
         //plane
         drawPlane(ourShader, planeVAO, planeTexture);
+        glDisable(GL_CULL_FACE);
+
 
         // tree
         treeShader.use();
@@ -466,6 +528,35 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
         glDepthFunc(GL_LESS);
+
+        // 2. blur bright fragments with two-pass Gaussian Blur
+        // --------------------------------------------------
+        bool horizontal = true, first_iteration = true;
+        unsigned int amount = 10;
+        blurShader.use();
+        for (unsigned int i = 0; i < amount; i++)
+        {
+            glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+            blurShader.setInt("horizontal", horizontal);
+            glBindTexture(GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);  // bind texture of other framebuffer (or scene if first iteration)
+            drawFlowers(bloomShader, flowerModel, flowers);
+            horizontal = !horizontal;
+            if (first_iteration)
+                first_iteration = false;
+        }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        // 3. now render floating point color buffer to 2D quad and tonemap HDR colors to default framebuffer's (clamped) color range
+        // --------------------------------------------------------------------------------------------------------------------------
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        bloomShader.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
+        bloomShader.setInt("bloom", bloom);
+        bloomShader.setFloat("exposure", exposure);
+        drawFlowers(bloomShader, flowerModel, flowers);
 
         if (programState->ImGuiEnabled)
             DrawImGui(programState);

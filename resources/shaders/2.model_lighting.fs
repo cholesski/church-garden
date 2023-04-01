@@ -3,7 +3,7 @@
 layout (location = 0) out vec4 FragColor;
 layout (location = 1) out vec4 BrightColor;
 
-#define NUM_OF_POINT_LIGHTS 2
+#define NUM_OF_POINT_LIGHTS 3
 
 struct Material {
     sampler2D diffuse;
@@ -134,5 +134,4 @@ void main() {
         BrightColor = vec4(FragColor.rgb, 1.0);
     else
         BrightColor = vec4(0.0, 0.0, 0.0, 1.0);
-
 }
