@@ -43,7 +43,7 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 bool spotlightOn = true;
 bool bloom = true;
-float exposure = 0.7f;
+float exposure = 0.4f;
 
 // camera
 
@@ -371,12 +371,6 @@ int main() {
 
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
-    blurShader.use();
-    blurShader.setInt("image", 0);
-
-    bloomShader.use();
-    bloomShader.setInt("scene", 0);
-    bloomShader.setInt("bloomBlur", 1);
 
     PointLight& directionalLight = programState->pointLight;
     directionalLight.position = programState->sunPosition;
@@ -404,6 +398,15 @@ int main() {
                     glm::vec3 (-2.9f, 0.05f, -0.6f)
             };
 
+    ourShader.use();
+    ourShader.setInt("material.diffuse", 0);
+    ourShader.setInt("material.specular", 1);
+
+    blurShader.use();
+    blurShader.setInt("image", 0);
+    bloomShader.use();
+    bloomShader.setInt("scene", 0);
+    bloomShader.setInt("bloomBlur", 1);
 
     // render loop
     // -----------
@@ -439,7 +442,7 @@ int main() {
 
         //point lights
         ourShader.setVec3("pointLights[0].position", pointLightPositions[0]);
-        ourShader.setVec3("pointLights[0].ambient", 1.0f, 1.0f, 1.0f);
+        ourShader.setVec3("pointLights[0].ambient", 2.0f, 2.0f, 1.0f);
         ourShader.setVec3("pointLights[0].diffuse", 1.0f, 1.0f, 1.0f);
         ourShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
         ourShader.setFloat("pointLights[0].constant", 1.0f);
@@ -447,17 +450,17 @@ int main() {
         ourShader.setFloat("pointLights[0].quadratic", 0.1f);
 
         ourShader.setVec3("pointLights[1].position", pointLightPositions[1]);
-        ourShader.setVec3("pointLights[1].ambient", 1.0f, 1.0f, 1.0f);
-        ourShader.setVec3("pointLights[1].diffuse", 0.7f, 0.7f, 1.1f);
-        ourShader.setVec3("pointLights[1].specular", 0.3f, 0.3f, 0.3f);
+        ourShader.setVec3("pointLights[1].ambient", 3.0f, 3.0f, 2.0f);
+        ourShader.setVec3("pointLights[1].diffuse", 1.7f, 1.7f, 2.7f);
+        ourShader.setVec3("pointLights[1].specular", 1.3f, 1.3f, 1.3f);
         ourShader.setFloat("pointLights[1].constant", 1.0f);
         ourShader.setFloat("pointLights[1].linear", 0.07f);
         ourShader.setFloat("pointLights[1].quadratic", 0.17f);
 
-        ourShader.setVec3("pointLights[2].position", pointLightPositions[1]);
-        ourShader.setVec3("pointLights[2].ambient", 10.0f, 10.0f, 10.0f);
-        ourShader.setVec3("pointLights[2].diffuse", 0.7f, 0.7f, 1.1f);
-        ourShader.setVec3("pointLights[2].specular", 0.3f, 0.3f, 0.3f);
+        ourShader.setVec3("pointLights[2].position", pointLightPositions[2]);
+        ourShader.setVec3("pointLights[2].ambient", 10.5f, 10.5f, 10.5f);
+        ourShader.setVec3("pointLights[2].diffuse", 12.7f, 12.7f, 12.7f);
+        ourShader.setVec3("pointLights[2].specular", 3.3f, 3.3f, 3.3f);
         ourShader.setFloat("pointLights[2].constant", 1.0f);
         ourShader.setFloat("pointLights[2].linear", 0.07f);
         ourShader.setFloat("pointLights[2].quadratic", 0.17f);
@@ -518,8 +521,10 @@ int main() {
         sunShader.use();
         sunShader.setMat4("projection", projection);
         sunShader.setMat4("view", view);
+        sunShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
 
         //sun
+
         drawSun(sunShader, sunModel);
 
         //skybox
@@ -599,6 +604,9 @@ void processInput(GLFWwindow *window) {
         programState->camera.ProcessKeyboard(LEFT, deltaTime, true);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         programState->camera.ProcessKeyboard(RIGHT, deltaTime, true);
+
+    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
+        bloom = !bloom;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
