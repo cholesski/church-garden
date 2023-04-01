@@ -34,6 +34,7 @@ void drawSun(Shader ourShader, Model sunModel);
 void drawAngel(Shader ourShader, Model angelModel);
 void drawLamp(Shader ourShader, Model lampModel);
 void drawFlowers(Shader ourShader, Model flowerModel, vector<glm::vec3> flowers);
+void renderQuad();
 
 unsigned int loadCubemap(vector<std::string> &faces);
 
@@ -370,6 +371,12 @@ int main() {
 
     skyboxShader.use();
     skyboxShader.setInt("skybox", 0);
+    blurShader.use();
+    blurShader.setInt("image", 0);
+
+    bloomShader.use();
+    bloomShader.setInt("scene", 0);
+    bloomShader.setInt("bloomBlur", 1);
 
     PointLight& directionalLight = programState->pointLight;
     directionalLight.position = programState->sunPosition;
@@ -484,6 +491,7 @@ int main() {
 
         //church
         drawChurch(ourShader, churchModel);
+        glDisable(GL_CULL_FACE);
         //angel
         drawAngel(ourShader, angelModel);
         //lamp
@@ -492,7 +500,6 @@ int main() {
         drawFlowers(ourShader, flowerModel, flowers);
         //plane
         drawPlane(ourShader, planeVAO, planeTexture);
-        glDisable(GL_CULL_FACE);
 
 
         // tree
@@ -539,7 +546,7 @@ int main() {
             glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
             blurShader.setInt("horizontal", horizontal);
             glBindTexture(GL_TEXTURE_2D, first_iteration ? colorBuffers[1] : pingpongColorbuffers[!horizontal]);  // bind texture of other framebuffer (or scene if first iteration)
-            drawFlowers(bloomShader, flowerModel, flowers);
+            renderQuad();
             horizontal = !horizontal;
             if (first_iteration)
                 first_iteration = false;
@@ -556,7 +563,7 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, pingpongColorbuffers[!horizontal]);
         bloomShader.setInt("bloom", bloom);
         bloomShader.setFloat("exposure", exposure);
-        drawFlowers(bloomShader, flowerModel, flowers);
+        renderQuad();
 
         if (programState->ImGuiEnabled)
             DrawImGui(programState);
@@ -811,4 +818,35 @@ unsigned int loadCubemap(vector<std::string> &faces)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
     return textureID;
+}
+
+// renderQuad() renders a 1x1 XY quad in NDC
+// -----------------------------------------
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+void renderQuad()
+{
+    if (quadVAO == 0)
+    {
+        float quadVertices[] = {
+                // positions        // texture Coords
+                -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+                -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+                1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+                1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        };
+        // setup plane VAO
+        glGenVertexArrays(1, &quadVAO);
+        glGenBuffers(1, &quadVBO);
+        glBindVertexArray(quadVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    }
+    glBindVertexArray(quadVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
 }
