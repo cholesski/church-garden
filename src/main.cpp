@@ -43,7 +43,7 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 bool spotlightOn = true;
 bool bloom = true;
-float exposure = 0.4f;
+float exposure = 0.7f;
 
 // camera
 
@@ -435,7 +435,7 @@ int main() {
 
         //directional light (from moon)
         directionalLight.position = programState->sunPosition;
-        ourShader.setVec3("directionalLight.direction", directionalLight.position);
+        ourShader.setVec3("directionalLight.direction", 0.0f, 13.0f, 13.0f);
         ourShader.setVec3("directionalLight.ambient", directionalLight.ambient);
         ourShader.setVec3("directionalLight.diffuse", directionalLight.diffuse);
         ourShader.setVec3("directionalLight.specular", directionalLight.specular);
