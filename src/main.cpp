@@ -790,7 +790,7 @@ void drawLamp(Shader ourShader, Model lampModel){
 }
 
 void drawFlowers(Shader ourShader, Model flowerModel, vector<glm::vec3> flowers){
-    for (int i = 0; i < flowers.size(); i++){
+    for (unsigned int i = 0; i < flowers.size(); i++){
         glm::mat4 model = glm::mat4 (1.0f);
         model = glm::translate(model, flowers[i]);
         ourShader.setMat4("model", model);
