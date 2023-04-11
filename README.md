@@ -4,6 +4,10 @@ A,S,D,W - camera movement
 B - turn bloom effect on/off
 I - increase exposure
 U - decrease exposure
+F - flashlight on/off
+
+Group A - cubemaps
+Group B - HDR, bloom
 
 Video preview : 
 https://youtu.be/PGsyNom_zjk

@@ -34,6 +34,7 @@ void drawMoon(Shader ourShader, Model moonModel);
 void drawAngel(Shader ourShader, Model angelModel);
 void drawLamp(Shader ourShader, Model lampModel);
 void drawFlowers(Shader ourShader, Model flowerModel, vector<glm::vec3> flowers);
+void drawTree(Shader ourShader, unsigned int transparentVAO, unsigned int treeTex);
 void renderQuad();
 
 unsigned int loadCubemap(vector<std::string> &faces);
@@ -501,13 +502,7 @@ int main() {
         treeShader.setInt("texture1", 0);
         treeShader.setMat4("view", view);
         treeShader.setMat4("projection", projection);
-        glBindVertexArray(transparentVAO);
-        glBindTexture(GL_TEXTURE_2D, treeTex);
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::scale(model, glm::vec3(1.5f, 1.5f, 1.5f));
-        model = glm::translate(model, glm::vec3(-0.06f, 0.5f, -2.26f));
-        treeShader.setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        drawTree(treeShader, transparentVAO, treeTex);
 
         moonShader.use();
         moonShader.setMat4("projection", projection);
@@ -799,6 +794,16 @@ void drawFlowers(Shader ourShader, Model flowerModel, vector<glm::vec3> flowers)
         ourShader.setMat4("model", model);
         flowerModel.Draw(ourShader);
     }
+}
+
+void drawTree(Shader ourShader, unsigned int transparentVAO, unsigned int treeTex){
+    glBindVertexArray(transparentVAO);
+    glBindTexture(GL_TEXTURE_2D, treeTex);
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::scale(model, glm::vec3(1.5f, 1.5f, 1.5f));
+    model = glm::translate(model, glm::vec3(-0.06f, 0.5f, -2.26f));
+    ourShader.setMat4("model", model);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 unsigned int loadCubemap(vector<std::string> &faces)
