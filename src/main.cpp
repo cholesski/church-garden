@@ -30,7 +30,7 @@ unsigned int loadTexture(char const * path, bool gammaCorrection);
 
 void drawChurch(Shader ourShader, Model churchModel);
 void drawPlane(Shader ourShader, unsigned int planeVAO, unsigned int floorTexture);
-void drawSun(Shader ourShader, Model sunModel);
+void drawMoon(Shader ourShader, Model moonModel);
 void drawAngel(Shader ourShader, Model angelModel);
 void drawLamp(Shader ourShader, Model lampModel);
 void drawFlowers(Shader ourShader, Model flowerModel, vector<glm::vec3> flowers);
@@ -43,7 +43,7 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 bool spotlightOn = true;
 bool bloom = true;
-float exposure = 0.7f;
+float exposure = 0.9f;
 
 // camera
 
@@ -78,11 +78,11 @@ struct ProgramState {
     bool ImGuiEnabled = false;
     Camera camera;
     bool CameraMouseMovementUpdateEnabled = true;
-    glm::vec3 churchPosition = glm::vec3(0.0f, -0.1f, 0.0f);
+    glm::vec3 churchPosition = glm::vec3(0.0f, -0.05f, 0.0f);
     glm::vec3 planePosition = glm::vec3(0.0f, 5.0f, 0.0f);
-    glm::vec3 sunPosition = glm::vec3 (-6.0f, 10.0f, 0.93f);
-    glm::vec3 lampPosition = glm::vec3(2.0f, 0.05f, 0.8f);
-    glm::vec3 angelPosition = glm::vec3(-20.0f, 0.05f, 0.8f);
+    glm::vec3 moonPosition = glm::vec3 (5.0f, 7.0f, -10.0f);
+    glm::vec3 lampPosition = glm::vec3(1.5f, 0.1f, 0.3f);
+    glm::vec3 angelPosition = glm::vec3(2.0f, 0.0f, -2.0f);
     float churchScale = 0.1f;
     float planeScale = 10.0;
     PointLight pointLight;
@@ -254,7 +254,7 @@ int main() {
     // build and compile shaders
     // -------------------------
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
-    Shader sunShader("resources/shaders/sun.vs", "resources/shaders/sun.fs");
+    Shader moonShader("resources/shaders/sun.vs", "resources/shaders/sun.fs");
     Shader skyboxShader("resources/shaders/skyBox.vs","resources/shaders/skyBox.fs");
     Shader treeShader("resources/shaders/tree.vs", "resources/shaders/tree.fs");
     Shader blurShader("resources/shaders/blur.vs", "resources/shaders/blur.fs");
@@ -264,7 +264,7 @@ int main() {
     // -----------
     Model churchModel("resources/objects/Obj/Parish Church Model+.obj");
     churchModel.SetShaderTextureNamePrefix("material.");
-    Model sunModel("resources/objects/sun/sphere.OBJ");
+    Model moonModel("resources/objects/sun/sphere.OBJ");
     Model angelModel("resources/objects/engel/source/Engel_C/Engel_C.obj");
     angelModel.SetShaderTextureNamePrefix("material.");
     Model lampModel("resources/objects/street_lamp/STLamp.obj");
@@ -373,21 +373,20 @@ int main() {
     skyboxShader.setInt("skybox", 0);
 
     PointLight& directionalLight = programState->pointLight;
-    directionalLight.position = programState->sunPosition;
-    directionalLight.ambient = glm::vec3(0.3f, 0.3f, 0.3f);
-    directionalLight.diffuse = glm::vec3(0.6, 0.6, 0.6);
+    directionalLight.position = programState->moonPosition;
+    directionalLight.ambient = glm::vec3(0.2f, 0.2f, 0.9f);
+    directionalLight.diffuse = glm::vec3(0.8, 0.8, 0.9);
     directionalLight.specular = glm::vec3(0.4, 0.4, 0.4);
 
     glm::vec3 pointLightPositions[] = {
-            glm::vec3(2.0f, 2.0f, 0.8f),
-            glm::vec3(-15.0f, 10.0f, 2.0f),
-            programState->sunPosition
+            programState->lampPosition + glm::vec3(0.0f, 2.0f, 0.0f),
+            programState->moonPosition
     };
 
     vector<glm::vec3> flowers
             {
                     glm::vec3(-2.5f, 0.05f, -0.48f),
-                    glm::vec3( 1.5f, 0.05f, 1.51f),
+                    glm::vec3( 0.0f, 0.05f, 1.51f),
                     glm::vec3( 1.0f, 0.05f, 0.7f),
                     glm::vec3(-1.27f, 0.05f, 1.8f),
                     glm::vec3 (1.55f, 0.05f, -0.6f),
@@ -434,7 +433,7 @@ int main() {
         glEnable(GL_CULL_FACE);
 
         //directional light (from moon)
-        directionalLight.position = programState->sunPosition;
+        directionalLight.position = programState->moonPosition;
         ourShader.setVec3("directionalLight.direction", 0.0f, 13.0f, 13.0f);
         ourShader.setVec3("directionalLight.ambient", directionalLight.ambient);
         ourShader.setVec3("directionalLight.diffuse", directionalLight.diffuse);
@@ -442,28 +441,20 @@ int main() {
 
         //point lights
         ourShader.setVec3("pointLights[0].position", pointLightPositions[0]);
-        ourShader.setVec3("pointLights[0].ambient", 2.0f, 2.0f, 1.0f);
-        ourShader.setVec3("pointLights[0].diffuse", 1.0f, 1.0f, 1.0f);
-        ourShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+        ourShader.setVec3("pointLights[0].ambient", 1.5f, 1.5f, 0.1f);
+        ourShader.setVec3("pointLights[0].diffuse", 5.0f, 5.0f, 0.1f);
+        ourShader.setVec3("pointLights[0].specular", 0.1f, 0.1f, 0.1f);
         ourShader.setFloat("pointLights[0].constant", 1.0f);
-        ourShader.setFloat("pointLights[0].linear", 0.02f);
-        ourShader.setFloat("pointLights[0].quadratic", 0.1f);
+        ourShader.setFloat("pointLights[0].linear", 0.2f);
+        ourShader.setFloat("pointLights[0].quadratic", 0.2f);
 
         ourShader.setVec3("pointLights[1].position", pointLightPositions[1]);
-        ourShader.setVec3("pointLights[1].ambient", 3.0f, 3.0f, 2.0f);
-        ourShader.setVec3("pointLights[1].diffuse", 1.7f, 1.7f, 2.7f);
-        ourShader.setVec3("pointLights[1].specular", 1.3f, 1.3f, 1.3f);
+        ourShader.setVec3("pointLights[1].ambient", 0.1f, 0.1f, 0.1f);
+        ourShader.setVec3("pointLights[1].diffuse", 1.7f, 1.7f, 1.7f);
+        ourShader.setVec3("pointLights[1].specular", 0.1f, 0.1f, 0.1f);
         ourShader.setFloat("pointLights[1].constant", 1.0f);
-        ourShader.setFloat("pointLights[1].linear", 0.07f);
-        ourShader.setFloat("pointLights[1].quadratic", 0.17f);
-
-        ourShader.setVec3("pointLights[2].position", pointLightPositions[2]);
-        ourShader.setVec3("pointLights[2].ambient", 10.5f, 10.5f, 10.5f);
-        ourShader.setVec3("pointLights[2].diffuse", 12.7f, 12.7f, 12.7f);
-        ourShader.setVec3("pointLights[2].specular", 3.3f, 3.3f, 3.3f);
-        ourShader.setFloat("pointLights[2].constant", 1.0f);
-        ourShader.setFloat("pointLights[2].linear", 0.07f);
-        ourShader.setFloat("pointLights[2].quadratic", 0.17f);
+        ourShader.setFloat("pointLights[1].linear", 0.007f);
+        ourShader.setFloat("pointLights[1].quadratic", 0.0002f);
 
         //spotlight
         ourShader.setVec3("spotlight.position", programState->camera.Position);
@@ -518,14 +509,13 @@ int main() {
         treeShader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        sunShader.use();
-        sunShader.setMat4("projection", projection);
-        sunShader.setMat4("view", view);
-        sunShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+        moonShader.use();
+        moonShader.setMat4("projection", projection);
+        moonShader.setMat4("view", view);
+        moonShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
 
-        //sun
-
-        drawSun(sunShader, sunModel);
+        //moon
+        drawMoon(moonShader, moonModel);
 
         //skybox
         glDepthFunc(GL_LEQUAL);
@@ -607,6 +597,10 @@ void processInput(GLFWwindow *window) {
 
     if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
         bloom = !bloom;
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+        exposure += 0.1f;
+    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
+        exposure -= 0.1f;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -765,26 +759,26 @@ void drawPlane(Shader ourShader, unsigned int planeVAO, unsigned int planeTextur
     glBindVertexArray(0);
 }
 
-void drawSun(Shader ourShader, Model sunModel){
+void drawMoon(Shader ourShader, Model moonModel){
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, programState->sunPosition);
+    model = glm::translate(model, programState->moonPosition);
     ourShader.setMat4("model", model);
-    sunModel.Draw(ourShader);
+    moonModel.Draw(ourShader);
 }
 
 void drawAngel(Shader ourShader, Model angelModel){
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
-//    model = glm::rotate(model, -100.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 model = glm::mat4(1.0f); 
     model = glm::translate(model, programState->angelPosition);
+    model = glm::rotate(model, -90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(0.2f, 0.2f, 0.2f));
     ourShader.setMat4("model", model);
     angelModel.Draw(ourShader);
 }
 
 void drawLamp(Shader ourShader, Model lampModel){
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
     model = glm::translate(model, programState->lampPosition);
+    model = glm::scale(model, glm::vec3(0.3f, 0.3f, 0.3f));
     ourShader.setMat4("model", model);
     lampModel.Draw(ourShader);
 }
@@ -793,6 +787,7 @@ void drawFlowers(Shader ourShader, Model flowerModel, vector<glm::vec3> flowers)
     for (unsigned int i = 0; i < flowers.size(); i++){
         glm::mat4 model = glm::mat4 (1.0f);
         model = glm::translate(model, flowers[i]);
+        model = glm::rotate(model, i*15.0f, glm::vec3(0.0f, 1.0f, 0.0f));
         ourShader.setMat4("model", model);
         flowerModel.Draw(ourShader);
     }
