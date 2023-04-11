@@ -5,3 +5,5 @@ B - turn bloom effect on/off
 I - increase exposure
 U - decrease exposure
 
+Video preview : 
+https://youtu.be/PGsyNom_zjk

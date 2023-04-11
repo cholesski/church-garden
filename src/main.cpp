@@ -597,10 +597,18 @@ void processInput(GLFWwindow *window) {
 
     if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS)
         bloom = !bloom;
+
     if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+    {
+        if (exposure > 0.0f)
+            exposure -= 0.1f;
+        else
+            exposure = 0.0f;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
+    {
         exposure += 0.1f;
-    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-        exposure -= 0.1f;
+    }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
