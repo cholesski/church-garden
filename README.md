@@ -6,8 +6,8 @@ I - increase exposure
 U - decrease exposure
 F - flashlight on/off
 
-Group A - cubemaps
-Group B - HDR, bloom
+Group A - cubemaps (skybox)
+Group B - HDR, bloom (moon, flowers, lamp)
 
 Video preview : 
 https://youtu.be/PGsyNom_zjk
