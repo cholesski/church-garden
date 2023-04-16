@@ -255,7 +255,7 @@ int main() {
     // build and compile shaders
     // -------------------------
     Shader ourShader("resources/shaders/2.model_lighting.vs", "resources/shaders/2.model_lighting.fs");
-    Shader moonShader("resources/shaders/sun.vs", "resources/shaders/sun.fs");
+    Shader moonShader("resources/shaders/moon.vs", "resources/shaders/moon.fs");
     Shader skyboxShader("resources/shaders/skyBox.vs","resources/shaders/skyBox.fs");
     Shader treeShader("resources/shaders/tree.vs", "resources/shaders/tree.fs");
     Shader blurShader("resources/shaders/blur.vs", "resources/shaders/blur.fs");
@@ -265,7 +265,7 @@ int main() {
     // -----------
     Model churchModel("resources/objects/Obj/Parish Church Model+.obj");
     churchModel.SetShaderTextureNamePrefix("material.");
-    Model moonModel("resources/objects/sun/sphere.OBJ");
+    Model moonModel("resources/objects/sphere.OBJ");
     Model angelModel("resources/objects/engel/source/Engel_C/Engel_C.obj");
     angelModel.SetShaderTextureNamePrefix("material.");
     Model lampModel("resources/objects/street_lamp/STLamp.obj");
