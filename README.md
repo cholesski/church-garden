@@ -2,8 +2,8 @@ A project for Computer graphics course. The scene depicts a church garden at nig
 Controls :
 A,S,D,W - camera movement
 B - turn bloom effect on/off
-I - increase exposure
-U - decrease exposure
+U - increase exposure
+I - decrease exposure
 F - flashlight on/off
 
 Group A - cubemaps (skybox)
